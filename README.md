@@ -42,6 +42,12 @@ aws_secret_access_key = <YOUR_SECRET_ACCESS_KEY>
 
 The node `aws-sdk` package will try to read/find that file. I just made that file from VS code, didn't even bother with the AWS CLI stuff.
 
+## Cert gen with Lets Encrypt
+There is a `sudo crontab` entry with the following line from SO with slight variation.
+`$43 6 * * * certbot renew --post-hook "systemctl reload nginx && pm2 restart index"`
+
+I have to see if the chained commands actually work but yeah, just jotting it down for future reference or when your server provider's email goes to spam and you don't pay the bill and they delete the server (that happened).
+
 ## References
 #### AWS S3 - assumes you have access to a bucket
 [Creating IAM user](https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/) - getting access-secret key(I used console eg. web interface)
