@@ -1,7 +1,11 @@
 ## About
 This back-end is built for this [ReactJS PWA](https://github.com/codeforkansascity/tagging-tracker-pwa) primarily used for auth(JWT), S3 upload and data syncing. The data sync eg. the address/tag-info/owner-info tables are held in `MySQL` and photos are stored in S3.
 
-The structure is pretty basic, the `index.js` file detects if it is live/if that is the case it will deploy to `https` these certificate files need to exist. Ideally they would be automatically generated with certbot but currently the live site is using 1yr long basic domain validated certs.
+The structure is pretty basic, the `index.js` file detects if it is live/if that is the case it will deploy to `https` these certificate files need to exist.
+
+At the moment I am not using a multi-ssl approach eg. this server only supports one domain at a time which sucks but it's fine it's a cheap VPS bought in bulk.
+
+The cert is applied at the node app level not as a port forward proxy (`443 to 5000/3000` etc...) which would be ideal/support multiple domains. There is a `sudo` level `crontab` that checks to renew the cert every week. The certs are renewed/same file path so the `pm2` service just has to restart to pick up the new certs (seems odd). But that's part of the callback in the `crontab` job after the certs are renewed.
 
 ### Routes
 `/login-user`
@@ -16,8 +20,7 @@ The structure is pretty basic, the `index.js` file detects if it is live/if that
 * Node, MySQL, AWS S3 Bucket(optional -- up to you)
 
 ## Local Dev
-You can use `npm run server` if you have `nodemon` installed to develop or just `node index.js`
-You should have it installed as it's part of the dependencies
+Use `npm start` to run the server locally
 
 ## Installation
 Assuming you have node/npm installed, you should be able to install all the dependencies as they're in `package.json` through `npm install`. Then run the backend with `node index.js` or `nodemon server`
