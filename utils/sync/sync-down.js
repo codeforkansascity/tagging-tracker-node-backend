@@ -150,22 +150,28 @@ const getTagInfoFromRecentSync = (syncId) => {
     });
 }
 
+const bundleData = async (syncId) => {
+    const bundledData = {};
+    bundledData['addresses'] = await getAddressesFromRecentSync(syncId);
+    bundledData['events'] = await getEventsFromRecentSync(syncId);
+    bundledData['tags'] = await getTagsFromRecentSync(syncId);
+    bundledData['ownerInfo'] = await getOwnerInfoFromRecentSync(syncId);
+    bundledData['tagInfo'] = await getTagInfoFromRecentSync(syncId);
+    return bundledData;
+}
+
 const syncDown = async (req, res) => {
     const userId = await getUserIdFromToken(req.token);
     const syncId = await getRecentSyncId(userId);
     if (!syncId) {
         res.status(200).send(false);
     } else {
-        const bundledData = {};
-        bundledData['addresses'] = await getAddressesFromRecentSync(syncId);
-        bundledData['events'] = await getEventsFromRecentSync(syncId);
-        bundledData['tags'] = await getTagsFromRecentSync(syncId);
-        bundledData['ownerInfo'] = await getOwnerInfoFromRecentSync(syncId);
-        bundledData['tagInfo'] = await getTagInfoFromRecentSync(syncId);
+        const bundledData = await bundleData(syncId);
         res.status(200).send(bundledData);
     }
 }
 
 module.exports = {
-    syncDown
+    syncDown,
+    bundleData
 }

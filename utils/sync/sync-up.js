@@ -256,7 +256,7 @@ const syncUp = async (req, res) => {
         if (syncErr) {
             res.status(400).send('Sync failed');
         } else {
-            res.status(201).send('Sync successful');
+            res.status(200).send('Sync successful');
         }
     } else {
         res.status(403);
