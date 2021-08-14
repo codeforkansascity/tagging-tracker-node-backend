@@ -398,8 +398,8 @@ const generateSpreadsheet = async (req, res) => {
   }
 
   res.status(409).send(false);
-}
+};
  
 module.exports = {
   generateSpreadsheet
-}
+};

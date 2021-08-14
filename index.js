@@ -13,6 +13,7 @@ const { uploadTags } = require('./utils/tags/uploadTags');
 const { syncUp } = require('./utils/sync/sync-up'); // sync here eg. client pushing up
 const { syncDown } = require('./utils/sync/sync-down');
 const { generateSpreadsheet } = require('./utils/spreadsheet/generator');
+const { generatePdf } = require('./utils/pdf/generator');
 
 let https;
 let https_options;
@@ -47,6 +48,8 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use('/public', express.static('public'));
+
 app.use(bodyParser.json({
     limit: '200mb' // payload too large error due to base64
 }));
@@ -71,6 +74,7 @@ app.post('/sync-up', verifyToken, syncUp); // these names are terrible
 app.post('/sync-down', verifyToken, syncDown);
 app.get('/generate-spreadsheet', verifyToken, generateSpreadsheet); // prod
 // app.get('/generate-spreadsheet', generateSpreadsheet); // dev
+app.get('/generate-pdf', generatePdf);
 
 if (process.env.NODE_ENV === "live") {
     https.createServer(https_options, app).listen(443);
