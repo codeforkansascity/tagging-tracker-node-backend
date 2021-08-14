@@ -60,6 +60,9 @@ app.use(
 // middleware for handling mutli-part data
 app.use(fileUpload());
 
+// static hosting for spreadsheet and pdf download
+app.use('/download-file', express.static('public'));
+
 // routes
 app.get('/',(req, res) => {
     res.status(200).send('tt');
@@ -69,7 +72,8 @@ app.post('/login-user', loginUser);
 app.post('/upload-tag', verifyToken, uploadTags);
 app.post('/sync-up', verifyToken, syncUp); // these names are terrible
 app.post('/sync-down', verifyToken, syncDown);
-app.get('/generate-spreadsheet', verifyToken, generateSpreadsheet);
+// app.get('/generate-spreadsheet', verifyToken, generateSpreadsheet); // prod
+app.get('/generate-spreadsheet', generateSpreadsheet);
 
 if (process.env.NODE_ENV === "live") {
     https.createServer(https_options, app).listen(443);

@@ -97,7 +97,8 @@ const getTagsFromRecentSync = (syncId) => {
                                 // this has to match how it was saved i.e. in sync-up.js or uplaodTags.js
                                 thumbnail_src: generateBase64FromBinaryBuffer(tagRow.thumbnail_src),
                                 meta: tagRow.meta, // stringify client side
-                                datetime: tagRow.date_time
+                                datetime: tagRow.date_time,
+                                url: tagRow.public_s3_url,
                             };
                         }));
                     } else {
