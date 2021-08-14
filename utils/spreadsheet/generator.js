@@ -238,14 +238,15 @@ const addSheetHeader = (key, ws, darkGreyHeaderStyle) => {
 };
 
 const generateSpreadsheet = async (req, res) => {
-  // const userId = await getUserIdFromToken(req.token);
-  // const syncId = await getRecentSyncId(userId);
-  const syncId = 4;
+  const userId = await getUserIdFromToken(req.token);
+  const syncId = await getRecentSyncId(userId);
+  // const syncId = 8; // dev
   const data = await bundleData(syncId);
   const dataKeys = Object.keys(data);
   
   if (dataKeys.length) {
     const wb = new xl.Workbook();
+    const addresses = [];
     let activeAddress;
     let optColIndex = 1;
 
@@ -286,6 +287,7 @@ const generateSpreadsheet = async (req, res) => {
 
               if (sheetDataKey === 'address') {
                 activeAddress = cellValue;
+                addresses.push(cellValue);
               }
 
               // crude type checking
@@ -304,6 +306,7 @@ const generateSpreadsheet = async (req, res) => {
             }
 
             if (key === 'events') {
+              activeAddress = addresses[sheetDataRow];
               const ommitKeys = ['tag_info_id'];
               if (ommitKeys.indexOf(sheetDataKey) !== -1) {
                 return;
@@ -322,6 +325,7 @@ const generateSpreadsheet = async (req, res) => {
             }
 
             if (key === 'tags') {
+              activeAddress = addresses[sheetDataRow];
               const ommitKeys = ['event_id', 'file_name',  'meta', 'name', 'thumbnail_src'];
               if (ommitKeys.indexOf(sheetDataKey) !== -1) {
                 return;
@@ -344,6 +348,7 @@ const generateSpreadsheet = async (req, res) => {
             }
 
             if (key === 'ownerInfo') {
+              activeAddress = addresses[sheetDataRow];
               if (sheetDataKey === 'address_id') {
                 wsChain = ws.cell(2 + sheetDataRow, 1);
                 wsChain.string(activeAddress);
@@ -358,6 +363,7 @@ const generateSpreadsheet = async (req, res) => {
             }
 
             if (key === 'tagInfo') {
+              activeAddress = addresses[sheetDataRow];
               if (sheetDataKey === 'address_id') {
                 wsChain = ws.cell(2 + sheetDataRow, 1);
                 wsChain.string(activeAddress);
