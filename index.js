@@ -60,9 +60,6 @@ app.use(
 // middleware for handling mutli-part data
 app.use(fileUpload());
 
-// static hosting for spreadsheet and pdf download
-app.use('/download-file', express.static('public'));
-
 // routes
 app.get('/',(req, res) => {
     res.status(200).send('tt');

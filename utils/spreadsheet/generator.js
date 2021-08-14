@@ -91,6 +91,135 @@ const ownerInfoKeyMap = {
   "option-15-0": "otherCodeEnforcement"
 };
 
+const tagInfoFields = {
+  "Date of entry:": { // TODO: these should be date time with date pickers
+      type: "date"
+  },
+  "Date of abatement:": { // TODO: these should be date time with date pickers
+      type: "date"
+  },
+  "Number of tags:": {
+      type: "number"
+  },
+  "Tag text (separated by commas):": {
+      type: "input"
+  },
+  "Small tag text (separated by commas):": {
+      type: "input"
+  },
+  "Square footage covered:": {
+      type: "number"
+  },
+  "Racial or hate tone?": {
+      type: "radio",
+      options: {
+          yes: "Yes",
+          no: "No",
+          other: "Other"
+      }
+  },
+  "Gang related:": {
+      type: "radio",
+      options: {
+          yes: "Yes",
+          no: "No",
+          other: "Other"
+      }
+  },
+  "Crossed out tag:": {
+      type: "radio",
+      options: {
+          yes: "Yes",
+          no: "No",
+          other: "Other"
+      }
+  },
+  "Type of property:": {
+      type: "radio",
+      options: {
+          commercial: "Commercial",
+          residential: "Residential",
+          public: "Public"
+      }
+  },
+  "Vacant property:": {
+      type: "radio",
+      options: {
+          yes: "Yes",
+          no: "No",
+          other: "unknown"
+      }
+  },
+  "Land bank property:": {
+      type: "radio",
+      options: {
+          yes: "Yes",
+          no: "No",
+          other: "unknown"
+      }
+  },
+  "Surface:": {
+      type: "checkbox",
+      options: {
+          brick: "Brick or Stone",
+          concrete: "Concrete",
+          wood: "Wood",
+          glass: "Glass",
+          painted: "Painted",
+          others: "other"
+      }
+  },
+  "Surface other:": {
+      type: "input"
+  },
+  "Need other code enforcement?": {
+      type: "checkbox",
+      options: {
+          buildingDisrepair: "Building disrepair",
+          weeds: "Weeds",
+          trash: "Trash",
+          illegalDumping: "Illegal dumping",
+          others: "other"
+      }
+  },
+  "Other code enforcement:": {
+      type: "input"
+  }
+};
+
+// remap tagInfoFields to match option-#-# pattern
+const tagInfoFieldsMap = {};
+
+Object.keys(tagInfoFields).forEach((formField, index) => {
+  const fieldData = tagInfoFields[formField];
+
+  if (fieldData.type === 'radio' || fieldData.type === 'checkbox') {
+    const optionsKeys = Object.keys(tagInfoFields[formField].options);
+    for (let i = 0; i < optionsKeys.length; i++) {
+      tagInfoFieldsMap[`option-${index}-${i}`] = optionsKeys[i];
+    };
+  } else {
+    tagInfoFieldsMap[`option-${index}`] = '';
+  }
+});
+
+/**
+ * the key is in the format of option-#-# where the # corresponds to depth based on tagInfoFields
+ * for example:
+ * option-6-1
+ * translates to:
+ * Racial or hate tone? No (6, 1)
+ */
+const processTagInfoField = (key, value) => {
+  const formFieldValue = tagInfoFieldsMap[key];
+
+  if (formFieldValue && value) {
+    return formFieldValue;
+  } else {
+    return value;
+  }
+};
+
 const addSheetHeader = (key, ws, darkGreyHeaderStyle) => {
   // these are known keys from the bundleData from sync-down file
   if (key === 'addresses') {
@@ -118,7 +247,7 @@ const generateSpreadsheet = async (req, res) => {
   if (dataKeys.length) {
     const wb = new xl.Workbook();
     let activeAddress;
-    let optCulInc = 1; // this is used when col does not automatically increment, in the case of filtered columns
+    let optColIndex = 1;
 
     const darkGreyHeaderStyle = wb.createStyle({
       font: {
@@ -139,19 +268,14 @@ const generateSpreadsheet = async (req, res) => {
       },
     });
 
-    console.log(dataKeys);
-
     dataKeys.forEach(key => {
       const ws = wb.addWorksheet(camelCapMap[key]);
       const sheetData = data[key];
 
       if (sheetData) {
         for (let sheetDataRow = 0; sheetDataRow < sheetData.length; sheetDataRow++) {
-          optCulInc = 1;
-          console.log(key);
+          optColIndex = 1;
           addSheetHeader(key, ws, darkGreyHeaderStyle);
-
-          console.log(Object.keys(sheetData[sheetDataRow]));
 
           Object.keys(sheetData[sheetDataRow]).forEach((sheetDataKey, sheetDataKeyIndex) => {
             const cellValue = sheetData[sheetDataRow][sheetDataKey];
@@ -219,6 +343,41 @@ const generateSpreadsheet = async (req, res) => {
               }
             }
 
+            if (key === 'ownerInfo') {
+              if (sheetDataKey === 'address_id') {
+                wsChain = ws.cell(2 + sheetDataRow, 1);
+                wsChain.string(activeAddress);
+              } else {
+                const formData = JSON.parse(cellValue);
+
+                Object.keys(formData).forEach((formField, formFieldIndex) => {
+                  wsChain = ws.cell(2 + sheetDataRow, 2 + formFieldIndex);
+                  wsChain.string(formData[formField]);
+                });
+              }
+            }
+
+            if (key === 'tagInfo') {
+              if (sheetDataKey === 'address_id') {
+                wsChain = ws.cell(2 + sheetDataRow, 1);
+                wsChain.string(activeAddress);
+              }
+
+              if (sheetDataKey === 'form_data') {
+                const formData = JSON.parse(cellValue);
+
+                Object.keys(formData).forEach(formField => {
+                  const formFieldValue = processTagInfoField(formField, formData[formField]);
+
+                  if (formFieldValue) {
+                    wsChain = ws.cell(2 + sheetDataRow, 1 + optColIndex);
+                    wsChain.string(formFieldValue);
+                    optColIndex += 1;
+                  }
+                });
+              }
+            }
+
             if (wsChain) {
               wsChain.style(cellStyle);
             }
@@ -232,7 +391,7 @@ const generateSpreadsheet = async (req, res) => {
     return;
   }
 
-  res.status(200).send(data);
+  res.status(409).send(false);
 }
  
 module.exports = {
