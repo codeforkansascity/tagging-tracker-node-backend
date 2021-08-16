@@ -8,9 +8,12 @@
 //   - tag info
 //   - tags (images)
 
+const http = require('http'); // https
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
 const { bundleData } = require('../sync/sync-down');
+const { processTagInfoField } = require('../misc/tagInfoFields');
+let responseSent = false;
 
 const ownerInfoFieldMap = {
   name: 'Name',
@@ -22,6 +25,12 @@ const ownerInfoFieldMap = {
   needFollowUp: 'Need follow up',
   buildingSurveyQuestionAnswer: 'Building survey question answer',
 };
+
+const tagInfoFieldMap = [
+  'Date Of Picture', 'Date Of Abatement', 'Number Of Tags', 'Tag Text', 'Small Tag Text', 'Square Footage Covered',
+  'Racial Or Hate Tone', 'Gang Related', 'Crossed Out Tag', 'Type Of Property', 'Vacant Property', 'Land Bank Property',
+  'Surface', 'Other Surface', 'Need Other Code Enforcement', 'Other Code Enforcement'
+];
 
 const generatePdf = async (req, res) => {
   // return new Promise(resolve => {
@@ -54,7 +63,9 @@ const generatePdf = async (req, res) => {
 
       // add address
       doc.fontSize(12);
+      doc.font('Courier-Bold');
       doc.text(addressName);
+      doc.font('Courier');
       doc.fontSize(10);
       doc.text('\n');
 
@@ -90,7 +101,9 @@ const generatePdf = async (req, res) => {
         if (eventRows[eventIndex].address_id === activeAddressId) {
           // this is dumb
           const dateStringParts = eventRows[eventIndex].date_time.toString().split(' ');
+          doc.font('Courier-Bold');
           doc.text('Owner info');
+          doc.font('Courier');
           doc.fontSize(8);
           doc.text('\n');
           doc.text(dateStringParts[1] + dateStringParts[2] + ', ' + dateStringParts[3]);
@@ -104,19 +117,124 @@ const generatePdf = async (req, res) => {
               });
             }
           });
+
+          doc.text('\n');
+          doc.fontSize(10);
+          doc.font('Courier-Bold');
+          doc.text('Events');
+          doc.font('Courier');
+
+          const tagInfoRows = data['tagInfo'];
+          // again this is terribly wasteful partial used loops within loops
+          // but at this scale, compute doesn't really matter
+          Object.keys(tagInfoRows).forEach(tagInfoRowIndex => {
+            if (tagInfoRows[tagInfoRowIndex].address_id === activeAddressId) {
+              const tagInfoFields = JSON.parse(tagInfoRows[tagInfoRowIndex].form_data);
+              let prevFormFieldPrimaryIndex;
+
+              Object.keys(tagInfoFields).forEach((formField, formFieldIndex) => {
+                let formFieldPrimaryIndex = formField.split('option-')[1];
+                const formFieldValue = processTagInfoField(formField, tagInfoFields[formField]);
+
+                if (formFieldPrimaryIndex.indexOf('-') !== -1) {
+                  formFieldPrimaryIndex = formFieldPrimaryIndex.split('-')[0];
+                }
+
+                if (!prevFormFieldPrimaryIndex || formFieldPrimaryIndex !== prevFormFieldPrimaryIndex) {
+                  doc.fontSize(4);
+                  doc.text('\n');
+                  doc.fontSize(9);
+                  doc.text(tagInfoFieldMap[formFieldPrimaryIndex]);
+                }
+
+                if (formFieldValue) {
+                  doc.fontSize(8);
+                  doc.text(formFieldValue, {
+                    indent: 8,
+                  });
+                }
+
+                prevFormFieldPrimaryIndex = formFieldPrimaryIndex;
+              });
+            }
+          });
+
+          // show tags for the event on new page just for sake of coordinate tracking
+          doc.addPage();
+          docPages += 1;
+          doc.switchToPage(docPages);
+          doc.text('\n');
+          doc.fontSize(10);
+          doc.font('Courier-Bold');
+          doc.text('Tags');
+          doc.font('Courier');
+
+          const tagRows = data['tags'];
+          const isSecure = req.protocol === 'https';
+          let appendedImgs = 0;
+          let horizontalOffset;
+
+          Object.keys(tagRows).forEach((tagRow, index) => {
+            if (tagRows[tagRow].address_id === activeAddressId) {
+              // get dimensions for proportions estimate to put images next to each other/use space better
+              const imageMeta = JSON.parse(tagRows[tagRow].meta);
+              const imageAr = imageMeta.height / imageMeta.width; // backwards since height oriented
+
+              // url is direct full size path from AWS S3
+              // margins are 100 all around
+
+              let tmpIndex = index;
+              if ((tmpIndex + 1) % 2 === 0) { // even
+                horizontalOffset = Math.ceil(imageAr * 350) + 10;
+              } else {
+                horizontalOffset = 0;
+              }
+              
+              if (isSecure) {
+                doc.image(
+                  tagRows[tagRow].url,
+                  (horizontalOffset + 100), // left
+                  (100 + (appendedImgs * 350)), // top
+                  {height: 350}) // scales proportionally
+                ;
+              } else {
+                doc.image(
+                  tagRows[tagRow].thumbnail_src,
+                  (horizontalOffset + 100),
+                  (100 + (appendedImgs * 350)),
+                  {height: 350}
+                );
+              }
+
+              appendedImgs += 1;
+            }
+          });
+
+          docPages += 1;
         }
       });
-
 
       doc.end();
 
       writeStream.on('finish', () => {
-        console.log('/public/TaggingTrackerAddress.pdf');
+        // pipe out file then delete it
+        // const file = fs.createWriteStream('./public/TaggingTrackerAddress.pdf');
+        // res.download('./public/TaggingTrackerAddress.pdf');
+        res.status(200).send(true);
+        responseSent = true;
       });
 
+    } else {
+      responseSent = true;
+      res.status(200).send(true);
     }
 
-    res.status(200).send(data);
+    setTimeout(() => {
+      // something went wrong
+      if (!responseSent) {
+        res.status(500).send(false);
+      }
+    }, 10000);
 
   // });
 };

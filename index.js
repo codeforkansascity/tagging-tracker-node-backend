@@ -72,8 +72,8 @@ app.post('/login-user', loginUser);
 app.post('/upload-tag', verifyToken, uploadTags);
 app.post('/sync-up', verifyToken, syncUp); // these names are terrible
 app.post('/sync-down', verifyToken, syncDown);
-app.get('/generate-spreadsheet', verifyToken, generateSpreadsheet); // prod
-// app.get('/generate-spreadsheet', generateSpreadsheet); // dev
+// app.get('/generate-spreadsheet', verifyToken, generateSpreadsheet); // prod
+app.get('/generate-spreadsheet', generateSpreadsheet); // dev
 app.get('/generate-pdf', generatePdf);
 
 if (process.env.NODE_ENV === "live") {

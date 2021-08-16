@@ -7,6 +7,7 @@
 const fs = require('fs');
 const xl = require('excel4node');
 const { bundleData } = require('../sync/sync-down');
+const { processTagInfoField } = require('../misc/tagInfoFields');
 
 const camelCapMap = {
   'addresses': 'Addresses',
@@ -31,195 +32,6 @@ const headerMap = {
   ]
 };
 
-// this is nasty need some camel case to cap function
-const ownerInfoHeaderMap = {
-  'dateOfPicture': 'Date Of Picture',
-  'dateOfAbatement': 'Date Of Abatement',
-  'numberOfTags': 'Number Of Tags',
-  'tagText': 'Tag Text',
-  'smallTagText': 'Small Tag Text',
-  'squareFootageCovered': 'Square Footage Covered',
-  'racialOrHateTone': 'Racial Or Hate Tone',
-  'gangRelated': 'Gang Related',
-  'crossedOutTag': 'Crossed Out Tag',
-  'typeOfProperty': 'Type Of Property',
-  'vacantProperty': 'Vacant Property',
-  'landBankProperty': 'Land Bank Property',
-  'surface': 'Surface',
-  'otherSurface': 'Other Surface',
-  'needOtherCodeEnforcement': 'Need Other Code Enforcement',
-  'otherCodeEnforcement': 'Other Code Enforcement'
-};
-
-const ownerInfoKeyMap = {
-  "option-0": "dateOfPicture",
-  "option-1": "dateOfAbatement",
-  "option-2": "numberOfTags",
-  "option-3": "tagText",
-  "option-4": "smallTagText",
-  "option-5": "squareFootageCovered",
-  "option-6-0": "racialOrHateTone",
-  "option-6-1": "racialOrHateTone",
-  "option-6-2": "racialOrHateTone",
-  "option-7-0": "gangRelated",
-  "option-7-1": "gangRelated",
-  "option-7-2": "gangRelated",
-  "option-8-0": "crossedOutTag",
-  "option-8-1": "crossedOutTag",
-  "option-8-2": "crossedOutTag",
-  "option-9-0": "typeOfProperty",
-  "option-9-1": "typeOfProperty",
-  "option-9-2": "typeOfProperty",
-  "option-10-0": "vacantProperty",
-  "option-10-1": "vacantProperty",
-  "option-10-2": "vacantProperty",
-  "option-11-0": "landBankProperty",
-  "option-11-1": "landBankProperty",
-  "option-11-2": "landBankProperty",
-  "option-12-0": "surface",
-  "option-12-1": "surface",
-  "option-12-2": "surface",
-  "option-12-3": "surface",
-  "option-12-4": "surface",
-  "option-12-5": "surface",
-  "option-13-0": "otherSurface",
-  "option-14-0": "needOtherCodeEnforcement",
-  "option-14-1": "needOtherCodeEnforcement",
-  "option-14-2": "needOtherCodeEnforcement",
-  "option-14-3": "needOtherCodeEnforcement",
-  "option-14-4": "needOtherCodeEnforcement",
-  "option-15-0": "otherCodeEnforcement"
-};
-
-const tagInfoFields = {
-  "Date of entry:": { // TODO: these should be date time with date pickers
-      type: "date"
-  },
-  "Date of abatement:": { // TODO: these should be date time with date pickers
-      type: "date"
-  },
-  "Number of tags:": {
-      type: "number"
-  },
-  "Tag text (separated by commas):": {
-      type: "input"
-  },
-  "Small tag text (separated by commas):": {
-      type: "input"
-  },
-  "Square footage covered:": {
-      type: "number"
-  },
-  "Racial or hate tone?": {
-      type: "radio",
-      options: {
-          yes: "Yes",
-          no: "No",
-          other: "Other"
-      }
-  },
-  "Gang related:": {
-      type: "radio",
-      options: {
-          yes: "Yes",
-          no: "No",
-          other: "Other"
-      }
-  },
-  "Crossed out tag:": {
-      type: "radio",
-      options: {
-          yes: "Yes",
-          no: "No",
-          other: "Other"
-      }
-  },
-  "Type of property:": {
-      type: "radio",
-      options: {
-          commercial: "Commercial",
-          residential: "Residential",
-          public: "Public"
-      }
-  },
-  "Vacant property:": {
-      type: "radio",
-      options: {
-          yes: "Yes",
-          no: "No",
-          other: "unknown"
-      }
-  },
-  "Land bank property:": {
-      type: "radio",
-      options: {
-          yes: "Yes",
-          no: "No",
-          other: "unknown"
-      }
-  },
-  "Surface:": {
-      type: "checkbox",
-      options: {
-          brick: "Brick or Stone",
-          concrete: "Concrete",
-          wood: "Wood",
-          glass: "Glass",
-          painted: "Painted",
-          others: "other"
-      }
-  },
-  "Surface other:": {
-      type: "input"
-  },
-  "Need other code enforcement?": {
-      type: "checkbox",
-      options: {
-          buildingDisrepair: "Building disrepair",
-          weeds: "Weeds",
-          trash: "Trash",
-          illegalDumping: "Illegal dumping",
-          others: "other"
-      }
-  },
-  "Other code enforcement:": {
-      type: "input"
-  }
-};
-
-// remap tagInfoFields to match option-#-# pattern
-const tagInfoFieldsMap = {};
-
-Object.keys(tagInfoFields).forEach((formField, index) => {
-  const fieldData = tagInfoFields[formField];
-
-  if (fieldData.type === 'radio' || fieldData.type === 'checkbox') {
-    const optionsKeys = Object.keys(tagInfoFields[formField].options);
-    for (let i = 0; i < optionsKeys.length; i++) {
-      tagInfoFieldsMap[`option-${index}-${i}`] = optionsKeys[i];
-    };
-  } else {
-    tagInfoFieldsMap[`option-${index}`] = '';
-  }
-});
-
-/**
- * the key is in the format of option-#-# where the # corresponds to depth based on tagInfoFields
- * for example:
- * option-6-1
- * translates to:
- * Racial or hate tone? No (6, 1)
- */
-const processTagInfoField = (key, value) => {
-  const formFieldValue = tagInfoFieldsMap[key];
-
-  if (formFieldValue && value) {
-    return formFieldValue;
-  } else {
-    return value;
-  }
-};
-
 const addSheetHeader = (key, ws, darkGreyHeaderStyle) => {
   // these are known keys from the bundleData from sync-down file
   if (key === 'addresses') {
@@ -238,9 +50,9 @@ const addSheetHeader = (key, ws, darkGreyHeaderStyle) => {
 };
 
 const generateSpreadsheet = async (req, res) => {
-  const userId = await getUserIdFromToken(req.token);
-  const syncId = await getRecentSyncId(userId);
-  // const syncId = 8; // dev
+  // const userId = await getUserIdFromToken(req.token);
+  // const syncId = await getRecentSyncId(userId);
+  const syncId = 8; // dev
   const data = await bundleData(syncId);
   const dataKeys = Object.keys(data);
   
@@ -320,7 +132,7 @@ const generateSpreadsheet = async (req, res) => {
                 wsChain.string(JSON.stringify(cellValue).split('T')[0].replace('"', ''));
               } else if (sheetDataKey === 'tag_ids') {
                 wsChain = ws.cell(2 + sheetDataRow, 3);
-                wsChain.number(cellValue.length);
+                wsChain.number(JSON.parse(cellValue).length);
               }
             }
 
@@ -372,7 +184,14 @@ const generateSpreadsheet = async (req, res) => {
               if (sheetDataKey === 'form_data') {
                 const formData = JSON.parse(cellValue);
 
+                // need to think about how to group this data
+                // let prevOption;
                 Object.keys(formData).forEach(formField => {
+                  // some data is in same cell
+                  // if (prevOption && prevOption === formField) {
+                  //   optColindex - 1;
+                  // }
+
                   const formFieldValue = processTagInfoField(formField, formData[formField]);
 
                   if (formFieldValue) {
@@ -380,6 +199,8 @@ const generateSpreadsheet = async (req, res) => {
                     wsChain.string(formFieldValue);
                     optColIndex += 1;
                   }
+
+                  prevOption = formField;
                 });
               }
             }
