@@ -73,7 +73,7 @@ const tagInfoFields = {
           wood: "Wood",
           glass: "Glass",
           painted: "Painted",
-          others: "other"
+          other: "other"
       }
   },
   "Surface other:": {
@@ -86,7 +86,7 @@ const tagInfoFields = {
           weeds: "Weeds",
           trash: "Trash",
           illegalDumping: "Illegal dumping",
-          others: "other"
+          other: "other"
       }
   },
   "Other code enforcement:": {
@@ -102,8 +102,10 @@ Object.keys(tagInfoFields).forEach((formField, index) => {
 
   if (fieldData.type === 'radio' || fieldData.type === 'checkbox') {
     const optionsKeys = Object.keys(tagInfoFields[formField].options);
+    
     for (let i = 0; i < optionsKeys.length; i++) {
-      tagInfoFieldsMap[`option-${index}-${i}`] = optionsKeys[i];
+      const optionKey = optionsKeys[i];
+      tagInfoFieldsMap[`option-${index}-${i}`] = tagInfoFields[formField].options[optionKey];
     };
   } else {
     tagInfoFieldsMap[`option-${index}`] = '';

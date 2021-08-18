@@ -180,6 +180,12 @@ const generatePdf = async (req, res) => {
               const imageMeta = JSON.parse(tagRows[tagRow].meta);
               const imageAr = imageMeta.height / imageMeta.width; // backwards since height oriented
 
+
+              // this needs better math, figure out the width taken up by each image,
+              // sort them to fill up the space, height is not enough
+
+
+
               // url is direct full size path from AWS S3
               // margins are 100 all around
 
@@ -207,6 +213,10 @@ const generatePdf = async (req, res) => {
               }
 
               appendedImgs += 1;
+
+              if (appendImgs > 4) {
+                docPages += 1;
+              }
             }
           });
 

@@ -1,5 +1,8 @@
 // this is kind of nasty how this spreadsheet is generated
 // primarily due to the cherry picked data and camel case key formatting from the data to the spreadsheet
+
+// the data should have been pre-sorted/arranged in the way it would be generated across the spreadsheet tabs
+
 // the gist is the data is grabbed/generated from the most recent user's sync id and the bundleData method from sync-down.js
 // the headers are set per spreadsheet tab and then not all columns are dumped out, hence specific filtering per tab
 // that's the nasty part, but if you fold all, you can see the higher separation/workflow
@@ -52,7 +55,7 @@ const addSheetHeader = (key, ws, darkGreyHeaderStyle) => {
 const generateSpreadsheet = async (req, res) => {
   // const userId = await getUserIdFromToken(req.token);
   // const syncId = await getRecentSyncId(userId);
-  const syncId = 8; // dev
+  const syncId = 2; // dev
   const data = await bundleData(syncId);
   const dataKeys = Object.keys(data);
   
@@ -61,6 +64,7 @@ const generateSpreadsheet = async (req, res) => {
     const addresses = [];
     let activeAddress;
     let optColIndex = 1;
+    const tagsAddresses = [];
 
     const darkGreyHeaderStyle = wb.createStyle({
       font: {
@@ -120,6 +124,7 @@ const generateSpreadsheet = async (req, res) => {
             if (key === 'events') {
               activeAddress = addresses[sheetDataRow];
               const ommitKeys = ['tag_info_id'];
+
               if (ommitKeys.indexOf(sheetDataKey) !== -1) {
                 return;
               }
@@ -138,14 +143,20 @@ const generateSpreadsheet = async (req, res) => {
 
             if (key === 'tags') {
               activeAddress = addresses[sheetDataRow];
+
+              if (activeAddress && tagsAddresses.indexOf(activeAddress) === -1) {
+                tagsAddresses.push(activeAddress);
+              }
+
               const ommitKeys = ['event_id', 'file_name',  'meta', 'name', 'thumbnail_src'];
+
               if (ommitKeys.indexOf(sheetDataKey) !== -1) {
                 return;
               }
 
               if (sheetDataKey === 'address_id') {
                 wsChain = ws.cell(2 + sheetDataRow, 1);
-                wsChain.string(activeAddress);
+                wsChain.string(tagsAddresses[sheetData[sheetDataRow].address_id - 1]);
               }
 
               if (sheetDataKey === 'datetime') {
@@ -176,6 +187,7 @@ const generateSpreadsheet = async (req, res) => {
 
             if (key === 'tagInfo') {
               activeAddress = addresses[sheetDataRow];
+
               if (sheetDataKey === 'address_id') {
                 wsChain = ws.cell(2 + sheetDataRow, 1);
                 wsChain.string(activeAddress);
@@ -184,23 +196,30 @@ const generateSpreadsheet = async (req, res) => {
               if (sheetDataKey === 'form_data') {
                 const formData = JSON.parse(cellValue);
 
-                // need to think about how to group this data
-                // let prevOption;
+                // pre-sort the data since writing into a cell is currently one time
+                const groupedFormData = {};
+
                 Object.keys(formData).forEach(formField => {
-                  // some data is in same cell
-                  // if (prevOption && prevOption === formField) {
-                  //   optColindex - 1;
-                  // }
-
                   const formFieldValue = processTagInfoField(formField, formData[formField]);
+                  let subFormField = formField.split('option-')[1];
 
-                  if (formFieldValue) {
-                    wsChain = ws.cell(2 + sheetDataRow, 1 + optColIndex);
-                    wsChain.string(formFieldValue);
-                    optColIndex += 1;
+                  if (subFormField.indexOf('-') !== -1) {
+                    subFormField = subFormField.split('-')[0];
                   }
 
-                  prevOption = formField;
+                  if (formFieldValue) {
+                    if (!(subFormField in groupedFormData)) {
+                      groupedFormData[subFormField] = [formFieldValue];
+                    } else {
+                      groupedFormData[subFormField].push(formFieldValue);
+                    }
+                  }
+                });
+
+                Object.keys(groupedFormData).forEach(groupedFormDataKey => {
+                    wsChain = ws.cell(2 + sheetDataRow, 1 + optColIndex);
+                    wsChain.string(groupedFormData[groupedFormDataKey].join(', '));
+                    optColIndex += 1;
                 });
               }
             }
