@@ -53,9 +53,9 @@ const addSheetHeader = (key, ws, darkGreyHeaderStyle) => {
 };
 
 const generateSpreadsheet = async (req, res) => {
-  // const userId = await getUserIdFromToken(req.token);
-  // const syncId = await getRecentSyncId(userId);
-  const syncId = 2; // dev
+  const userId = await getUserIdFromToken(req.token);
+  const syncId = await getRecentSyncId(userId);
+  // const syncId = 2; // dev
   const data = await bundleData(syncId);
   const dataKeys = Object.keys(data);
   

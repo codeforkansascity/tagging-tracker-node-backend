@@ -4,19 +4,6 @@ const { getDateTime } = require('./../datetime/functions');
 const { pool } = require('./../../utils/db/dbConnect');
 
 const addAddress = (req, res) => {
-    // jwt.verify(req.token, process.env.JWT_SECRET_KEY, (err, authData) => {
-    //     if (err) {
-    //         res.sendStatus(403);
-    //     } else {
-            // console.log(req.body);
-            // res.json({
-            //     message: 'Post created...',
-            //     authData
-            // });
-            // res.sendStatus(201);
-    //     }
-    // });
-
     if (typeof req.body.address === "undefined") {
         res.status(400).send('missing address string');
     } else {
