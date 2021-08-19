@@ -225,9 +225,10 @@ const generatePdf = async (req, res) => {
             // https://stackoverflow.com/a/60506358/2710227
 
             const awsS3ImgRes = await axios.get(img.url, { responseType: 'arrayBuffer' });
+            const awsS3ImgBuff = Buffer.from(awsS3ImgRes);
 
             doc.image(
-              awsS3ImgRes,
+              awsS3ImgBuff,
               (horizontalOffset), // left
               (verticalOffset), // top
               {...imgDimensions})
