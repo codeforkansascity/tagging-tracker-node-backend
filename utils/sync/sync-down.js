@@ -1,29 +1,7 @@
 require('dotenv').config()
-const { getUserIdFromToken } = require('../users/userFunctions');
+const { getUserIdFromToken, getRecentSyncId } = require('../users/userFunctions');
 const { pool } = require('./../../utils/db/dbConnect');
-const { getDateTime } = require('./../../utils/datetime/functions');
 const { generateBase64FromBinaryBuffer } = require('./sync-utils');
-
-const getRecentSyncId = (userId) => {
-    return new Promise(resolve => {
-        pool.query(
-            `SELECT id FROM sync_history WHERE user_id = ? ORDER BY sync_timestamp DESC LIMIT 1`,
-            [userId],
-            (err, res) => {
-                if (err) {
-                    console.log('select sync id', err);
-                    resolve(false);
-                } else {
-                    if (res.length) {
-                        resolve(res[0].id);
-                    } else {
-                        resolve(false);
-                    }
-                }
-            }
-        );
-    });
-}
 
 const getAddressesFromRecentSync = (syncId) => {
     return new Promise(resolve => {

@@ -11,6 +11,7 @@ const fs = require('fs');
 const xl = require('excel4node');
 const { bundleData } = require('../sync/sync-down');
 const { processTagInfoField } = require('../misc/tagInfoFields');
+const { getUserIdFromToken, getRecentSyncId } = require('../users/userFunctions');
 
 const camelCapMap = {
   'addresses': 'Addresses',

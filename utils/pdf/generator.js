@@ -14,6 +14,8 @@ const PDFDocument = require('pdfkit');
 const { bundleData } = require('../sync/sync-down');
 const { processTagInfoField } = require('../misc/tagInfoFields');
 const { makeRandomStr } = require('./../misc/stringGenerator');
+const { getUserIdFromToken, getRecentSyncId } = require('../users/userFunctions');
+
 let responseSent = false;
 
 const ownerInfoFieldMap = {
@@ -34,11 +36,12 @@ const tagInfoFieldMap = [
 ];
 
 const generatePdf = async (req, res) => {
-  // const userId = await getUserIdFromToken(req.token);
-  // const addressId = req.addressId;
-  // const syncId = await getRecentSyncId(userId);
-  const addressName = '1234 Prospect Ave';
-  const syncId = 3; // dev
+  // https://stackoverflow.com/a/66006090
+  // it is lazy to send a token as params, particularly due to url length of 2083 but this token is small it's just enconding the username
+  // it's generally around a couple hundred chars long
+  const userId = await getUserIdFromToken(req.query.token);
+  const syncId = await getRecentSyncId(userId);
+  const addressName = decodeURIComponent(req.query.address);
   const data = await bundleData(syncId);
   const publicPdfPath = `./public/TaggingTrackerAddress-${makeRandomStr(8)}.pdf`; // random str is for "unique" files
 

@@ -1,5 +1,5 @@
 require('dotenv').config()
-const { getUserIdFromToken } = require('../users/userFunctions');
+const { getUserIdFromToken, getSyncId } = require('../users/userFunctions');
 const { pool } = require('./../../utils/db/dbConnect');
 const { getDateTime } = require('./../../utils/datetime/functions');
 const { uploadToS3 } = require('./../../utils/s3/uploadTag');
@@ -19,25 +19,6 @@ const s3 = new AWS.S3({apiVersion: '2006-03-01'});
  * then the rows inserted into various tables use this sync_id.
  * Pulling down uses most recent(timestamp) and groups by that sync_id from sync_history
  */
-
-// I suppose it is possible to steal a sync_id on accident eg. race condition but it doesn't really matter
-// since it's just a unique reference
-const getSyncId = async (userId) => {
-    return new Promise(resolve => {
-        pool.query(
-            `INSERT INTO sync_history SET user_id = ?, sync_timestamp = ?`,
-            [userId, getDateTime()], // no sync id on uploads
-            (err, res) => {
-                if (err) {
-                    console.log('getSyncId', err);
-                    resolve(false);
-                } else {
-                    resolve(res.insertId);
-                }
-            }
-        );
-    });
-}
 
 const formatTimeStr = (timeStr) => {
     if (timeStr.indexOf('T') !== -1) {
