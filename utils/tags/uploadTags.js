@@ -1,4 +1,4 @@
-require('dotenv').config()
+require('dotenv').config('./../../.env');
 const { getUserIdFromToken } = require('./../users/userFunctions');
 const { pool } = require('./../../utils/db/dbConnect');
 const { uploadToS3 } = require('./../../utils/s3/uploadTag');
