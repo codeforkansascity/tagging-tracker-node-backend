@@ -8,14 +8,13 @@
 //   - tag info
 //   - tags (images)
 
-const http = require('http'); // https
 const fs = require('fs');
-const request = require('request').defaults({ encoding: null });
 const PDFDocument = require('pdfkit');
 const { bundleData } = require('../sync/sync-down');
 const { processTagInfoField } = require('../misc/tagInfoFields');
 const { makeRandomStr } = require('./../misc/stringGenerator');
 const { getUserIdFromToken, getRecentSyncId } = require('../users/userFunctions');
+import axios from 'axios';
 
 let responseSent = false;
 
@@ -223,18 +222,17 @@ const generatePdf = async (req, res) => {
 
           if (isSecure) {
             // fix for readFileSync
-            // https://stackoverflow.com/a/46377008
-            // https://stackoverflow.com/a/18265122/2710227
+            // https://stackoverflow.com/a/60506358/2710227
 
-            request.get(img.url, (err, res, body) => {
-              const awsS3Img = Buffer.from(body, 'base64');
-              doc.image(
-                awsS3Img,
-                (horizontalOffset), // left
-                (verticalOffset), // top
-                {...imgDimensions})
-              ;
-            });
+            const awsS3ImgRes = await axios.get(img.url, { responseType: 'arrayBuffer' });
+            const imgBuffer = Buffer.from(awsS3ImgRes.data, 'base64');
+
+            doc.image(
+              imgBuffer,
+              (horizontalOffset), // left
+              (verticalOffset), // top
+              {...imgDimensions})
+            ;
           } else {
             doc.image(
               img.thumbnail_src,
