@@ -39,7 +39,7 @@ const generatePdf = async (req, res) => {
   // https://stackoverflow.com/a/66006090
   // it is lazy to send a token as params, particularly due to url length of 2083 but this token is small it's just enconding the username
   // it's generally around a couple hundred chars long
-  const userId = await getUserIdFromToken(req.query.token);
+  const userId = await getUserIdFromToken(res, req.query.token);
   const syncId = await getRecentSyncId(userId);
   const addressName = decodeURIComponent(req.query.address);
   const data = await bundleData(syncId);

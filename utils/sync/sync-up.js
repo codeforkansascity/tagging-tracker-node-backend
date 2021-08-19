@@ -204,7 +204,7 @@ const deleteAddresses = async (userId, syncId, deletedAddresses) => {
 
 const syncUp = async (req, res) => {
     // somehow req.token is available though sent from body
-    const userId = await getUserIdFromToken(req.token);
+    const userId = await getUserIdFromToken(res, req.token);
     if (userId) {
         const syncId = await getSyncId(userId);
         const dataToSync = req.body.bundledData;

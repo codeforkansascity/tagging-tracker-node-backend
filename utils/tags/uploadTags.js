@@ -60,7 +60,7 @@ const uploadTags = async (req, res) => {
             }
 
             // considerable this is a waste if first insert attempt fails, but saves subsequent requests
-            const userId = await getUserIdFromToken(req.body.headers.Authorization.split('Bearer ')[1]);
+            const userId = await getUserIdFromToken(res, req.body.headers.Authorization.split('Bearer ')[1]);
             if (!userId) {
                 res.status(400).send('Failed to upload images, a'); // lol these debug lines
             }

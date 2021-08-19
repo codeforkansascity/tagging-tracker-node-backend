@@ -62,7 +62,7 @@ const _deleteUser = (userId) => {
     );
 }
 
-const getUserIdFromToken = async (token) => {
+const getUserIdFromToken = async (res, token) => {
     return new Promise(resolve => {
         if (token) {
             jwt.verify(token, process.env.JWT_SECRET_KEY, (err, authData) => {

@@ -140,7 +140,7 @@ const bundleData = async (syncId) => {
 }
 
 const syncDown = async (req, res) => {
-    const userId = await getUserIdFromToken(req.token);
+    const userId = await getUserIdFromToken(res, req.token);
     const syncId = await getRecentSyncId(userId);
     if (!syncId) {
         res.status(200).send(false);
