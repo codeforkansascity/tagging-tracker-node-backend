@@ -205,7 +205,7 @@ const generatePdf = async (req, res) => {
           }
         });
 
-        addressEventImgs.forEach((img, index) => {
+        addressEventImgs.forEach(async (img, index) => {
           const imgDimensions = {}; // PDFKit proportional image just need one dimension key i.e. width or height
 
           if (img.width) {
