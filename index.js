@@ -89,8 +89,8 @@ app.post('/login-user', loginUser);
 app.post('/upload-tag', verifyToken, uploadTags);
 app.post('/sync-up', verifyToken, syncUp); // these names are terrible
 app.post('/sync-down', verifyToken, syncDown);
-app.post('/generate-spreadsheet', generateSpreadsheet); // no auth, partially due to difficulty (binary download) but also have to be logged in to trigger, files delete after download and filenames are obfuscated
-app.get('/generate-pdf*', generatePdf);
+app.get('/generate-spreadsheet', generateSpreadsheet); // no auth, partially due to difficulty (binary download) but also have to be logged in to trigger, files delete after download and filenames are obfuscated
+app.get('/generate-pdf', generatePdf);
 
 if (process.env.NODE_ENV === "live") {
     https.createServer(https_options, app).listen(443);
