@@ -8,7 +8,11 @@ const { makeRandomStr } = require('./../misc/stringGenerator');
 // import s3 stuff from module later
 const AWS = require('aws-sdk');
 const bucketName = process.env.AWS_S3_NAME;
-AWS.config.update({region: process.env.AWS_S3_REGION});
+AWS.config.update({
+    region: process.env.AWS_S3_REGION,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+});
 const s3 = new AWS.S3({apiVersion: '2006-03-01'});
 
 const maxFileSize = 16_000_000;
