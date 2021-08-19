@@ -14,7 +14,7 @@ const { bundleData } = require('../sync/sync-down');
 const { processTagInfoField } = require('../misc/tagInfoFields');
 const { makeRandomStr } = require('./../misc/stringGenerator');
 const { getUserIdFromToken, getRecentSyncId } = require('../users/userFunctions');
-import axios from 'axios';
+const axios = require('axios');
 
 let responseSent = false;
 
