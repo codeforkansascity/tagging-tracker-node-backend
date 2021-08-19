@@ -221,14 +221,12 @@ const generatePdf = async (req, res) => {
           }
 
           if (isSecure) { // no point distinguishing but different images i.e. full vs. small
-            doc.rotate(180);
             doc.image( // for whatever reason this image is flipped
               img.src,
               (horizontalOffset), // left
               (verticalOffset), // top
               {...imgDimensions})
             ;
-            doc.rotate(180);
           } else {
             doc.image(
               img.thumbnail_src,

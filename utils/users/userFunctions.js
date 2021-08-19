@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { pool } = require('./../../utils/db/dbConnect');
 const bcrypt = require('bcrypt');
 const saltRounds = 15;
+const { getDateTime } = require('./../../utils/datetime/functions');
 
 // internal method currently, need middleware if public
 const _createUser = (username, password) => {
