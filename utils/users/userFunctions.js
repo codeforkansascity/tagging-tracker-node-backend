@@ -67,7 +67,7 @@ const getUserIdFromToken = async (res, token) => {
         if (token) {
             jwt.verify(token, process.env.JWT_SECRET_KEY, (err, authData) => {
                 if (err) {
-                    res.sendStatus(403);
+                    res.status(403).send('Forbidden');
                 } else {
                     pool.query(
                         `SELECT id FROM users WHERE username = ?`,
