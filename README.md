@@ -76,6 +76,9 @@ The `seed-database.js` file should run completely provided you have a working lo
 ## Deploying with Systemd
 One way to deploy the node back end is through [systemd](https://www.axllent.org/docs/view/nodejs-service-with-systemd/) a service manager in `Linux`, this takes the place of running the `node` app by `node index.js` directly in terminal. If you go this route, note that when you make changes you will have to reload the daemon i.e. `systemctl daemon-reload` and then restart the service i.e. `systemctl restart nameofservice.service`.
 
+## Deploying with pm2 (current)
+This is the current way to deploy. Easier than systemd. There isn't a port proxy so the node app uses port 443 on its own. Certs renew automatically/cert paths don't change.
+
 ## Potential issues
 `max_packet_size` this should be at least `100MB` just to pull a number out of thin air but a `ECONNRESET` issue appeared once while development due to a large file. The `100MB` is insane but [apparently](https://dba.stackexchange.com/questions/45665/what-max-allowed-packet-is-big-enough-and-why-do-i-need-to-change-it) it's fine with a max of `1GB`. It is important to keep in mind that a `base64` file grows significantly eg. an original `~4MB` file jumps to over `10MB` when converted to `base64`.
 
