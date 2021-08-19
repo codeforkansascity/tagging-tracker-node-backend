@@ -85,7 +85,7 @@ const getUserIdFromToken = async (res, token) => {
                 }
             });
         } else {
-            resolve(false);
+            res.status(403).send('Forbidden');
         }
     });
 }
