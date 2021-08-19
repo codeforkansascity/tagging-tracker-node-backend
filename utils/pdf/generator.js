@@ -221,8 +221,12 @@ const generatePdf = async (req, res) => {
           }
 
           if (isSecure) {
+            // https://stackoverflow.com/a/55665315/2710227
+            // for readFileSync
+            const fileUrl = new URL(`file:${img.url}`);
+
             doc.image(
-              img.url,
+              fileUrl,
               (horizontalOffset), // left
               (verticalOffset), // top
               {...imgDimensions})
