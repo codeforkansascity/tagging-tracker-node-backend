@@ -227,7 +227,7 @@ const generatePdf = async (req, res) => {
             // https://stackoverflow.com/a/18265122/2710227
 
             request.get(img.url, (err, res, body) => {
-              const awsS3Img = Buffer(body, 'base64');
+              const awsS3Img = Buffer.from(body, 'base64');
               doc.image(
                 awsS3Img,
                 (horizontalOffset), // left
