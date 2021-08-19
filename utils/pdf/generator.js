@@ -228,7 +228,7 @@ const generatePdf = async (req, res) => {
               (verticalOffset), // top
               {...imgDimensions})
             ;
-            doc.restore();
+            doc.rotate(180);
           } else {
             doc.image(
               img.thumbnail_src,
