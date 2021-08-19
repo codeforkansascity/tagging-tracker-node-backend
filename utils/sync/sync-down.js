@@ -131,11 +131,11 @@ const getTagInfoFromRecentSync = (syncId) => {
     });
 }
 
-const bundleData = async (syncId) => {
+const bundleData = async (syncId, local = false) => {
     const bundledData = {};
     bundledData['addresses'] = await getAddressesFromRecentSync(syncId);
     bundledData['events'] = await getEventsFromRecentSync(syncId);
-    bundledData['tags'] = await getTagsFromRecentSync(syncId);
+    bundledData['tags'] = await getTagsFromRecentSync(syncId, local);
     bundledData['ownerInfo'] = await getOwnerInfoFromRecentSync(syncId);
     bundledData['tagInfo'] = await getTagInfoFromRecentSync(syncId);
     return bundledData;
