@@ -1,5 +1,5 @@
-require('dotenv').config()
-const { getUserIdFromToken } = require('../users/userFunctions');
+require('dotenv').config();
+const { getUserIdFromToken, getSyncId } = require('../users/userFunctions');
 const { pool } = require('./../../utils/db/dbConnect');
 const { getDateTime } = require('./../../utils/datetime/functions');
 const { uploadToS3 } = require('./../../utils/s3/uploadTag');
@@ -9,7 +9,11 @@ const { makeRandomStr } = require('./../misc/stringGenerator');
 // import s3 stuff from module later
 const AWS = require('aws-sdk');
 const bucketName = process.env.AWS_S3_NAME;
-AWS.config.update({region: process.env.AWS_S3_REGION});
+AWS.config.update({
+    region: process.env.AWS_S3_REGION,
+    accessKeyId: process.env.AWS_S3_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_S3_SECRET_ACCESS_KEY,
+});
 const s3 = new AWS.S3({apiVersion: '2006-03-01'});
 
 /**
@@ -19,25 +23,6 @@ const s3 = new AWS.S3({apiVersion: '2006-03-01'});
  * then the rows inserted into various tables use this sync_id.
  * Pulling down uses most recent(timestamp) and groups by that sync_id from sync_history
  */
-
-// I suppose it is possible to steal a sync_id on accident eg. race condition but it doesn't really matter
-// since it's just a unique reference
-const getSyncId = async (userId) => {
-    return new Promise(resolve => {
-        pool.query(
-            `INSERT INTO sync_history SET user_id = ?, sync_timestamp = ?`,
-            [userId, getDateTime()], // no sync id on uploads
-            (err, res) => {
-                if (err) {
-                    console.log('getSyncId', err);
-                    resolve(false);
-                } else {
-                    resolve(res.insertId);
-                }
-            }
-        );
-    });
-}
 
 const formatTimeStr = (timeStr) => {
     if (timeStr.indexOf('T') !== -1) {
@@ -223,7 +208,7 @@ const deleteAddresses = async (userId, syncId, deletedAddresses) => {
 
 const syncUp = async (req, res) => {
     // somehow req.token is available though sent from body
-    const userId = await getUserIdFromToken(req.token);
+    const userId = await getUserIdFromToken(res, req.token);
     if (userId) {
         const syncId = await getSyncId(userId);
         const dataToSync = req.body.bundledData;
@@ -256,7 +241,7 @@ const syncUp = async (req, res) => {
         if (syncErr) {
             res.status(400).send('Sync failed');
         } else {
-            res.status(201).send('Sync successful');
+            res.status(200).send('Sync successful');
         }
     } else {
         res.status(403);

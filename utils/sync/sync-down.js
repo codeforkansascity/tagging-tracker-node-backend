@@ -1,29 +1,7 @@
 require('dotenv').config()
-const { getUserIdFromToken } = require('../users/userFunctions');
+const { getUserIdFromToken, getRecentSyncId } = require('../users/userFunctions');
 const { pool } = require('./../../utils/db/dbConnect');
-const { getDateTime } = require('./../../utils/datetime/functions');
 const { generateBase64FromBinaryBuffer } = require('./sync-utils');
-
-const getRecentSyncId = (userId) => {
-    return new Promise(resolve => {
-        pool.query(
-            `SELECT id FROM sync_history WHERE user_id = ? ORDER BY sync_timestamp DESC LIMIT 1`,
-            [userId],
-            (err, res) => {
-                if (err) {
-                    console.log('select sync id', err);
-                    resolve(false);
-                } else {
-                    if (res.length) {
-                        resolve(res[0].id);
-                    } else {
-                        resolve(false);
-                    }
-                }
-            }
-        );
-    });
-}
 
 const getAddressesFromRecentSync = (syncId) => {
     return new Promise(resolve => {
@@ -75,10 +53,12 @@ const getEventsFromRecentSync = (syncId) => {
     });
 }
 
-const getTagsFromRecentSync = (syncId) => {
+const getTagsFromRecentSync = (syncId, local = false) => {
+    const localCol = local ? 'src,' : ''; // this is a huge base64 string, try to avoid sending it down
+
     return new Promise(resolve => {
         pool.query(
-            `SELECT file_name, address_id, event_id, thumbnail_src, public_s3_url, meta, date_time FROM tags WHERE sync_id = ? ORDER BY id`,
+            `SELECT file_name, address_id, event_id, ${localCol} thumbnail_src, public_s3_url, meta, date_time FROM tags WHERE sync_id = ? ORDER BY id`,
             [syncId],
             (err, res) => {
                 if (err) {
@@ -89,7 +69,7 @@ const getTagsFromRecentSync = (syncId) => {
                         // convert binary to base64
                         resolve(res.map((tagRow) => {
                             const tagMeta = JSON.parse(tagRow.meta);
-                            return {
+                            const baseObj = {
                                 file_name: tagRow.file_name,
                                 name: tagMeta.name,
                                 address_id: tagRow.address_id,
@@ -97,8 +77,15 @@ const getTagsFromRecentSync = (syncId) => {
                                 // this has to match how it was saved i.e. in sync-up.js or uplaodTags.js
                                 thumbnail_src: generateBase64FromBinaryBuffer(tagRow.thumbnail_src),
                                 meta: tagRow.meta, // stringify client side
-                                datetime: tagRow.date_time
+                                datetime: tagRow.date_time,
+                                url: tagRow.public_s3_url,
                             };
+
+                            if (localCol) {
+                                baseObj['src'] = tagRow.src;
+                            }
+
+                            return baseObj;
                         }));
                     } else {
                         resolve(false);
@@ -150,22 +137,28 @@ const getTagInfoFromRecentSync = (syncId) => {
     });
 }
 
+const bundleData = async (syncId, local = false) => {
+    const bundledData = {};
+    bundledData['addresses'] = await getAddressesFromRecentSync(syncId);
+    bundledData['events'] = await getEventsFromRecentSync(syncId);
+    bundledData['tags'] = await getTagsFromRecentSync(syncId, local);
+    bundledData['ownerInfo'] = await getOwnerInfoFromRecentSync(syncId);
+    bundledData['tagInfo'] = await getTagInfoFromRecentSync(syncId);
+    return bundledData;
+}
+
 const syncDown = async (req, res) => {
-    const userId = await getUserIdFromToken(req.token);
+    const userId = await getUserIdFromToken(res, req.token);
     const syncId = await getRecentSyncId(userId);
     if (!syncId) {
         res.status(200).send(false);
     } else {
-        const bundledData = {};
-        bundledData['addresses'] = await getAddressesFromRecentSync(syncId);
-        bundledData['events'] = await getEventsFromRecentSync(syncId);
-        bundledData['tags'] = await getTagsFromRecentSync(syncId);
-        bundledData['ownerInfo'] = await getOwnerInfoFromRecentSync(syncId);
-        bundledData['tagInfo'] = await getTagInfoFromRecentSync(syncId);
+        const bundledData = await bundleData(syncId);
         res.status(200).send(bundledData);
     }
 }
 
 module.exports = {
-    syncDown
+    syncDown,
+    bundleData
 }

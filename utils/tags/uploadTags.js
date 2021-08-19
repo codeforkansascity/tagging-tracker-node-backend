@@ -1,4 +1,4 @@
-require('dotenv').config()
+require('dotenv').config();
 const { getUserIdFromToken } = require('./../users/userFunctions');
 const { pool } = require('./../../utils/db/dbConnect');
 const { uploadToS3 } = require('./../../utils/s3/uploadTag');
@@ -8,7 +8,11 @@ const { makeRandomStr } = require('./../misc/stringGenerator');
 // import s3 stuff from module later
 const AWS = require('aws-sdk');
 const bucketName = process.env.AWS_S3_NAME;
-AWS.config.update({region: process.env.AWS_S3_REGION});
+AWS.config.update({
+    region: process.env.AWS_S3_REGION,
+    accessKeyId: process.env.AWS_S3_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_S3_SECRET_ACCESS_KEY,
+});
 const s3 = new AWS.S3({apiVersion: '2006-03-01'});
 
 const maxFileSize = 16_000_000;
@@ -60,7 +64,7 @@ const uploadTags = async (req, res) => {
             }
 
             // considerable this is a waste if first insert attempt fails, but saves subsequent requests
-            const userId = await getUserIdFromToken(req.body.headers.Authorization.split('Bearer ')[1]);
+            const userId = await getUserIdFromToken(res, req.body.headers.Authorization.split('Bearer ')[1]);
             if (!userId) {
                 res.status(400).send('Failed to upload images, a'); // lol these debug lines
             }

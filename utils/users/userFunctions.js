@@ -3,9 +3,10 @@ const jwt = require('jsonwebtoken');
 const { pool } = require('./../../utils/db/dbConnect');
 const bcrypt = require('bcrypt');
 const saltRounds = 15;
+const { getDateTime } = require('./../../utils/datetime/functions');
 
 // internal method currently, need middleware if public
-const createUser = (username, password) => {
+const _createUser = (username, password) => {
     if (!username || !password) {
         return false;
     }
@@ -48,7 +49,7 @@ const createUser = (username, password) => {
 }
 
 // internal method currently, need middleware if public
-const deleteUser = (userId) => {
+const _deleteUser = (userId) => {
     pool.query(
         `DELETE FROM users WHERE id = ?`,
         [userId],
@@ -62,12 +63,12 @@ const deleteUser = (userId) => {
     );
 }
 
-const getUserIdFromToken = async (token) => {
+const getUserIdFromToken = async (res, token) => {
     return new Promise(resolve => {
         if (token) {
             jwt.verify(token, process.env.JWT_SECRET_KEY, (err, authData) => {
                 if (err) {
-                    res.sendStatus(403);
+                    res.status(403).send('Forbidden');
                 } else {
                     pool.query(
                         `SELECT id FROM users WHERE username = ?`,
@@ -85,11 +86,53 @@ const getUserIdFromToken = async (token) => {
                 }
             });
         } else {
-            resolve(false);
+            res.status(403).send('Forbidden');
         }
     });
 }
 
+// I suppose it is possible to steal a sync_id on accident eg. race condition but it doesn't really matter
+// since it's just a unique reference
+const getSyncId = async (userId) => {
+    return new Promise(resolve => {
+        pool.query(
+            `INSERT INTO sync_history SET user_id = ?, sync_timestamp = ?`,
+            [userId, getDateTime()], // no sync id on uploads
+            (err, res) => {
+                if (err) {
+                    console.log('getSyncId', err);
+                    resolve(false);
+                } else {
+                    resolve(res.insertId);
+                }
+            }
+        );
+    });
+}
+
+const getRecentSyncId = (userId) => {
+    return new Promise(resolve => {
+        pool.query(
+            `SELECT id FROM sync_history WHERE user_id = ? ORDER BY sync_timestamp DESC LIMIT 1`,
+            [userId],
+            (err, res) => {
+                if (err) {
+                    console.log('select sync id', err);
+                    resolve(false);
+                } else {
+                    if (res.length) {
+                        resolve(res[0].id);
+                    } else {
+                        resolve(false);
+                    }
+                }
+            }
+        );
+    });
+}
+
 module.exports = {
-    getUserIdFromToken
+    getUserIdFromToken,
+    getSyncId,
+    getRecentSyncId
 };

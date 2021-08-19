@@ -1,5 +1,8 @@
 # files
 .env
+.DS_Store
+awsConfig.json
 
 # folders
 node_modules/
+public/

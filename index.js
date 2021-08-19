@@ -12,6 +12,8 @@ const { verifyToken } = require('./utils/middleware/jwt');
 const { uploadTags } = require('./utils/tags/uploadTags');
 const { syncUp } = require('./utils/sync/sync-up'); // sync here eg. client pushing up
 const { syncDown } = require('./utils/sync/sync-down');
+const { generateSpreadsheet } = require('./utils/spreadsheet/generator');
+const { generatePdf } = require('./utils/pdf/generator');
 
 let https;
 let https_options;
@@ -41,10 +43,29 @@ if (process.env.NODE_ENV === "live") {
 
 // CORs
 app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    const allowedOriginsList = [
+        process.env.LOCAL_APP_BASE_PATH,
+        process.env.APP_BASE_PATH,
+    ];
+    const inboundOrigin = req.get('origin');
+    let allowedOrigin = '';
+
+    if (allowedOriginsList.indexOf(inboundOrigin) !== -1) {
+        allowedOrigin = inboundOrigin;
+    } else {
+        // not sure what the right status to send is here, this is probably not the right way to terminate CORs anyway
+        // but an improvemnet over wildcard
+        res.status(500).send('Bad CORS origin');
+        return;
+    }
+
+    res.header("Access-Control-Allow-Origin", allowedOrigin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST');
+    res.header("Access-Control-Allow-Headers", "x-access-token, Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
+
+app.use('/public', express.static('public'));
 
 app.use(bodyParser.json({
     limit: '200mb' // payload too large error due to base64
@@ -68,6 +89,8 @@ app.post('/login-user', loginUser);
 app.post('/upload-tag', verifyToken, uploadTags);
 app.post('/sync-up', verifyToken, syncUp); // these names are terrible
 app.post('/sync-down', verifyToken, syncDown);
+app.get('/generate-spreadsheet', generateSpreadsheet); // no auth, partially due to difficulty (binary download) but also have to be logged in to trigger, files delete after download and filenames are obfuscated
+app.get('/generate-pdf', generatePdf);
 
 if (process.env.NODE_ENV === "live") {
     https.createServer(https_options, app).listen(443);
