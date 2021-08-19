@@ -1,4 +1,4 @@
-require('dotenv').config('./../../.env');
+require('dotenv').config();
 const { getUserIdFromToken, getSyncId } = require('../users/userFunctions');
 const { pool } = require('./../../utils/db/dbConnect');
 const { getDateTime } = require('./../../utils/datetime/functions');
