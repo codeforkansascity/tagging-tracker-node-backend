@@ -69,7 +69,7 @@ const getTagsFromRecentSync = (syncId, local = false) => {
                         // convert binary to base64
                         resolve(res.map((tagRow) => {
                             const tagMeta = JSON.parse(tagRow.meta);
-                            return {
+                            const baseObj = {
                                 file_name: tagRow.file_name,
                                 name: tagMeta.name,
                                 address_id: tagRow.address_id,
@@ -80,6 +80,12 @@ const getTagsFromRecentSync = (syncId, local = false) => {
                                 datetime: tagRow.date_time,
                                 url: tagRow.public_s3_url,
                             };
+
+                            if (localCol) {
+                                baseObj['src'] = tagRow.src;
+                            }
+
+                            return baseObj;
                         }));
                     } else {
                         resolve(false);
