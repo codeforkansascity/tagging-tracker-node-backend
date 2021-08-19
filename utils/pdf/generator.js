@@ -14,7 +14,6 @@ const { bundleData } = require('../sync/sync-down');
 const { processTagInfoField } = require('../misc/tagInfoFields');
 const { makeRandomStr } = require('./../misc/stringGenerator');
 const { getUserIdFromToken, getRecentSyncId } = require('../users/userFunctions');
-const request = require('request');
 
 let responseSent = false;
 
@@ -42,7 +41,7 @@ const generatePdf = async (req, res) => {
   const userId = await getUserIdFromToken(res, req.query.token);
   const syncId = await getRecentSyncId(userId);
   const addressName = decodeURIComponent(req.query.address);
-  const data = await bundleData(syncId);
+  const data = await bundleData(syncId, true);
   const publicPdfPath = `./public/TaggingTrackerAddress-${makeRandomStr(8)}.pdf`; // random str is for "unique" files
 
   if (data) {
@@ -197,6 +196,7 @@ const generatePdf = async (req, res) => {
             }
 
             addressEventImgs.push({
+              src: tagRows[tagRow].src,
               url: tagRows[tagRow].url,
               thumbnail_src: tagRows[tagRow].thumbnail_src,
               width: imgWidth,
@@ -220,24 +220,13 @@ const generatePdf = async (req, res) => {
             horizontalOffset = 50;
           }
 
-          if (isSecure) {
-            // fix for readFileSync
-            // https://stackoverflow.com/a/49424282/2710227
-
-            const reqOptions = {
-              url: img.url,
-              method: 'get',
-              encoding: null
-            };
-
-            request(reqOptions, (err, res, body) => {
-              doc.image(
-                body,
-                (horizontalOffset), // left
-                (verticalOffset), // top
-                {...imgDimensions})
-              ;
-            });
+          if (isSecure) { // no point distinguishing but different images i.e. full vs. small
+            doc.image(
+              img.src,
+              (horizontalOffset), // left
+              (verticalOffset), // top
+              {...imgDimensions})
+            ;
           } else {
             doc.image(
               img.thumbnail_src,

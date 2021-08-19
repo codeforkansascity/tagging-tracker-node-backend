@@ -53,10 +53,12 @@ const getEventsFromRecentSync = (syncId) => {
     });
 }
 
-const getTagsFromRecentSync = (syncId) => {
+const getTagsFromRecentSync = (syncId, local = false) => {
+    const localCol = local ? 'src,' : ''; // this is a huge base64 string, try to avoid sending it down
+
     return new Promise(resolve => {
         pool.query(
-            `SELECT file_name, address_id, event_id, thumbnail_src, public_s3_url, meta, date_time FROM tags WHERE sync_id = ? ORDER BY id`,
+            `SELECT file_name, address_id, event_id, ${localCol} thumbnail_src, public_s3_url, meta, date_time FROM tags WHERE sync_id = ? ORDER BY id`,
             [syncId],
             (err, res) => {
                 if (err) {
