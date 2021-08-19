@@ -14,7 +14,7 @@ const { bundleData } = require('../sync/sync-down');
 const { processTagInfoField } = require('../misc/tagInfoFields');
 const { makeRandomStr } = require('./../misc/stringGenerator');
 const { getUserIdFromToken, getRecentSyncId } = require('../users/userFunctions');
-const axios = require('axios');
+const request = require('request');
 
 let responseSent = false;
 
@@ -205,7 +205,7 @@ const generatePdf = async (req, res) => {
           }
         });
 
-        addressEventImgs.forEach(async (img, index) => {
+        addressEventImgs.forEach((img, index) => {
           const imgDimensions = {}; // PDFKit proportional image just need one dimension key i.e. width or height
 
           if (img.width) {
@@ -222,17 +222,22 @@ const generatePdf = async (req, res) => {
 
           if (isSecure) {
             // fix for readFileSync
-            // https://stackoverflow.com/a/60506358/2710227
+            // https://stackoverflow.com/a/49424282/2710227
 
-            const awsS3ImgRes = await axios.get(img.url, { responseType: 'arrayBuffer' });
-            const awsS3ImgBuff = Buffer.from(awsS3ImgRes);
+            const reqOptions = {
+              url: img.url,
+              method: 'get',
+              encoding: null
+            };
 
-            doc.image(
-              awsS3ImgBuff,
-              (horizontalOffset), // left
-              (verticalOffset), // top
-              {...imgDimensions})
-            ;
+            request(reqOptions, (err, res, body) => {
+              doc.image(
+                body,
+                (horizontalOffset), // left
+                (verticalOffset), // top
+                {...imgDimensions})
+              ;
+            });
           } else {
             doc.image(
               img.thumbnail_src,
