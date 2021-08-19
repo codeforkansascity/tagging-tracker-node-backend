@@ -10,6 +10,7 @@
 
 const http = require('http'); // https
 const fs = require('fs');
+const request = require('request').defaults({ encoding: null });
 const PDFDocument = require('pdfkit');
 const { bundleData } = require('../sync/sync-down');
 const { processTagInfoField } = require('../misc/tagInfoFields');
@@ -221,16 +222,19 @@ const generatePdf = async (req, res) => {
           }
 
           if (isSecure) {
-            // https://stackoverflow.com/a/55665315/2710227
-            // for readFileSync
-            const fileUrl = new URL(`file:${img.url}`);
+            // fix for readFileSync
+            // https://stackoverflow.com/a/46377008
+            // https://stackoverflow.com/a/18265122/2710227
 
-            doc.image(
-              fileUrl,
-              (horizontalOffset), // left
-              (verticalOffset), // top
-              {...imgDimensions})
-            ;
+            request.get(img.url, (err, res, body) => {
+              const awsS3Img = Buffer(body, 'base64');
+              doc.image(
+                awsS3Img,
+                (horizontalOffset), // left
+                (verticalOffset), // top
+                {...imgDimensions})
+              ;
+            });
           } else {
             doc.image(
               img.thumbnail_src,
